@@ -1,50 +1,66 @@
 import React from "react";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import "./Cart.css";
+import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
+import { useSelector } from "react-redux";
+import { removeItem, resetCart } from "../../redux/cartReducer";
+import { useDispatch } from "react-redux";
+import { makeRequest } from "../../makeRequest";
+import { loadStripe } from "@stripe/stripe-js";
 
 const Cart = () => {
-  const data = [
-    {
-      id: 1,
-      img: "https://images.pexels.com/photos/1308885/pexels-photo-1308885.jpeg",
-      img2: "https://images.pexels.com/photos/899740/pexels-photo-899740.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-      title: "Vestido Asiatico",
-      desc: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Culpa alias sit tempore voluptates veritatis illum natus minima nobis ut non, modi sequi dolore corrupti incidunt perspiciatis autem soluta aperiam suscipit!",
-      isNew: true,
-      oldPrice: 19,
-      price: 12,
-    },
-    {
-        id: 2,
-        img: "https://images.pexels.com/photos/899740/pexels-photo-899740.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-        img2: "https://images.pexels.com/photos/1308885/pexels-photo-1308885.jpeg",
-        title: "Vestido Asiatico dos",
-        desc: "Lorem ipsum dolor sit amet, consectetur adipisicing elit. Culpa alias sit tempore voluptates veritatis illum natus minima nobis ut non, modi sequi dolore corrupti incidunt perspiciatis autem soluta aperiam suscipit!",
-        isNew: true,
-        oldPrice: 17,
-        price: 10,
-      },
-  ];
+  const products = useSelector((state) => state.cart.products);
+  const dispatch = useDispatch();
+
+  const totalPrice = () => {
+    let total = 0;
+    products.forEach((item) => {
+      total += item.quantity * item.price;
+    });
+    return total.toFixed(2);
+  };
+
+  const stripePromise = loadStripe(
+    "pk_test_eOTMlr8usx1ctymXqrik0ls700lQCsX2UB"
+  );
+  const handlePayment = async () => {
+    try {
+      const stripe = await stripePromise;
+      const res = await makeRequest.post("/orders", {
+        products,
+      });
+      await stripe.redirectToCheckout({
+        sessionId: res.data.stripeSession.id,
+      });
+
+    } catch (err) {
+      console.log(err);
+    }
+  };
   return (
     <div className="cart">
-      <h2>Products in your cart</h2>
-      {data?.map((item) => (
+      <h1>Products in your cart</h1>
+      {products?.map((item) => (
         <div className="item" key={item.id}>
-          <img src={item.img} alt="imagen" />
+          <img src={process.env.REACT_APP_UPLOAD_URL + item.img} alt="" />
           <div className="details">
-            <h3>{item.title}</h3>
-            <p>{item.desc.substring(0, 100)}</p>
-            <div className="price">1 x ${item.price}</div>
+            <h1>{item.title}</h1>
+            <p>{item.desc?.substring(0, 100)}</p>
+            <div className="price">
+              {item.quantity} x ${item.price}
+            </div>
           </div>
-          <DeleteOutlinedIcon className="delete" />
+          <DeleteOutlinedIcon
+            className="delete"
+            onClick={() => dispatch(removeItem(item.id))}
+          />
         </div>
       ))}
       <div className="total">
         <span>SUBTOTAL</span>
-        <span>$123</span>
+        <span>${totalPrice()}</span>
       </div>
-      <button>PROCEED TO CHECKOUT</button>
-      <span className="reset">
+      <button onClick={handlePayment}>PROCEED TO CHECKOUT</button>
+      <span className="reset" onClick={() => dispatch(resetCart())}>
         Reset Cart
       </span>
     </div>

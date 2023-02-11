@@ -23,7 +23,6 @@
 .categories .row button {
   position: absolute;
   min-width: 100px;
-  width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
   height: 50px;

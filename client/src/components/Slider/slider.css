@@ -17,7 +17,6 @@
      object-fit: cover;
 }
 .slider .icons {
-  width: -webkit-fit-content;
   width: -moz-fit-content;
   width: fit-content;
   display: flex;
